@@ -167,7 +167,7 @@ void readEEPROM() {
 }
 
 void measure() {
-  distance_trip = speed_count * 2 * 0.96;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter tires
+  distance_trip = speed_count * 2;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
   speed = (distance_trip - prev_odo) * 36 * (1000.0 / delta) / 100;
   prev_odo = distance_trip;
   distance_trip /= 10;  //conversion to meters
