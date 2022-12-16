@@ -1,5 +1,6 @@
 #include <Ucglib.h>
 #include <EEPROM.h>
+#include <math.h>
 #include "Bitmaps.h"
 
 Ucglib_ST7735_18x128x160_HWSPI tft(8, 6, 7);  // A0=8, RESET=7, CS=6, SDA=11, SCK=13
@@ -23,6 +24,9 @@ Ucglib_ST7735_18x128x160_HWSPI tft(8, 6, 7);  // A0=8, RESET=7, CS=6, SDA=11, SC
 #define value_radio 3                         //how much to change the volume of multimedia
 #define speed_radio_up 85                     //speed to increase the volume
 #define speed_radio_down 70                   //at what speed to reduce the volume
+
+#define TERMIST_B 3315
+#define VIN 5.0
 
 const int fuel_inj_flow = 152;                //injector performance
 float volt = 12;
@@ -76,7 +80,11 @@ void setup() {
   pinMode(PWR_COMTROL_PIN, OUTPUT);
   digitalWrite(PWR_COMTROL_PIN, HIGH);
   readEEPROM();
-  consump_odo = liters_odo * 1e5 / distance_odo;
+  if (distance_odo != 0){
+    consump_odo = liters_odo * 1e5 / distance_odo;
+  } else {
+    consump_odo = 0;
+  }
   refuel = tank_lvl / consump_odo * 100;
   size_temp_matrix = sizeof(temp_matrix) / (sizeof(int) * 2) - 1;
   isParkingLiteOn = digitalRead(ILLUMINATION_PIN);
@@ -163,14 +171,14 @@ void readEEPROM() {
   EEPROM.get(40, liters_last_trip_3);
   EEPROM.get(44, distance_last_trip_3);
   EEPROM.get(48, motor_hours);
-}
+  }
 
 void measure() {
-  distance_trip = speed_count * 2;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
+  distance_trip = speed_count * 2 * 0.96;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
   speed = (distance_trip - prev_odo) * 36 * (1000.0 / delta) / 100;
   prev_odo = distance_trip;
   distance_trip /= 10;  //conversion to meters
-  volt = analogRead(VOLT_PIN) * 16 / 1024.0 + 0.1; //VREF * ((DIV_R1 + DIV_R2) / DIV_R2) R1 = 10, R2 = 4.7 
+  volt = analogRead(VOLT_PIN) * 16 / 1024.0 + 0.1; //VREF * ((DIV_R1 + DIV_R2) / DIV_R2) (R1 = 10, R2 = 4.7) 15.64? 
 
   if (rpm > 0) {
     l_h = inj_time * rpm * 2e-5 * fuel_inj_flow;  //instant consumption
@@ -203,17 +211,18 @@ void measure() {
 }
 
 void temp_measure() {
-
-  temp_ins = analogRead(TEMP_INSIDE_PIN);
+  float voltage = analogRead(TEMP_INSIDE_PIN) * VIN / 1024.0;
+  float r1 = voltage / (VIN - voltage);
+  temp_ins = 1./( 1./(TERMIST_B)*log(r1)+1./(25. + 273.) ) - 273;  
   
   if (rpm > 0) {
     temp = analogRead(TEMP_ENG_PIN);
     temp *= 14.5 / volt;
     int i = size_temp_matrix;
     do {
-      temp_eng = temp_matrix[i][1];
       i--;
     } while (temp > temp_matrix[i][0] && i > 0);
+    temp_eng = temp_matrix[i][1];    
   }
 }
 
