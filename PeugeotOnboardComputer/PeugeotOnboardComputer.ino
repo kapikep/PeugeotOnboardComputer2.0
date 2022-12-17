@@ -17,16 +17,16 @@ Ucglib_ST7735_18x128x160_HWSPI tft(8, 6, 7);  // A0=8, RESET=7, CS=6, SDA=11, SC
 #define VOLT_PIN A4                           //Voltmeter
 #define TEMP_INSIDE_PIN A7                    //Temp inside salon
 
+#define TERMIST_B 3315                        //Temp inside B-coefficient
+#define VIN 5.0                               
+
 #define VOLUP 0x04
 #define VOLDOWN 0x05
 #define PULSEWIDTH 555
 #define ADDRESS 0x47        
-#define value_radio 3                         //how much to change the volume of multimedia
-#define speed_radio_up 85                     //speed to increase the volume
-#define speed_radio_down 70                   //at what speed to reduce the volume
-
-#define TERMIST_B 3315
-#define VIN 5.0
+#define RADIO_VOLUME_STEP 3                   //how much to change the volume of multimedia
+#define RADIO_SPEED_UP 85                     //speed to increase the volume
+#define RADIO_SPEED_DOWN 70                   //at what speed to reduce the volume
 
 const int fuel_inj_flow = 152;                //injector performance
 float volt = 12;
@@ -39,7 +39,6 @@ byte idx_avg = 0;
 
 byte size_temp_matrix;
 unsigned long tank_avg;
-byte i;
 
 boolean btnState, btnFlag, reset, shutdown, isDrawNames;
 unsigned long debounceTimer;
@@ -47,6 +46,7 @@ unsigned long debounceTimer;
 unsigned long rpm;
 float liters_trip, l_h, liters_odo;
 float liters_last_trip_0, liters_last_trip_1, liters_last_trip_2, liters_last_trip_3;
+unsigned long distance_last_trip_0, distance_last_trip_1, distance_last_trip_2, distance_last_trip_3;
 unsigned long fuel_count;
 int motor_hours, motor_hours_trip;
 float consump, consump_avg, consump_odo;
@@ -54,7 +54,6 @@ int consump_graphical;
 byte speed;
 int speed_avg;
 unsigned long distance_trip, prev_odo, speed_avg_count, distance_odo, count;
-unsigned long distance_last_trip_0, distance_last_trip_1, distance_last_trip_2, distance_last_trip_3;
 
 unsigned long timer0, timer1, timer2;
 byte timer3 = 7, low_volt_timer;
@@ -92,16 +91,13 @@ void setup() {
 }
 
 void loop() {
-
   button();
-
   if (millis() - timer0 >= 1101) {
     timer0 = millis();
     rpm = 15e6 / pulseIn(RPM_PIN, LOW, 100000); 
     display();
     pwr_manager();
   }
-
   delta = millis() - timer1;
   if (delta >= 1000) {
     timer1 = millis();
@@ -109,7 +105,6 @@ void loop() {
     lvl();
     radio();
   }
-
   if (millis() - timer2 >= 10101) {
     timer2 = millis();
     temp_measure();

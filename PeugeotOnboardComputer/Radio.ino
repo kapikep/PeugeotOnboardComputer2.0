@@ -1,13 +1,13 @@
 void radio() {
-  if (speed > speed_radio_up) {
-    if (value_radio_count < value_radio) {
+  if (speed > RADIO_SPEED_UP) {
+    if (value_radio_count < RADIO_VOLUME_STEP) {
       SendCommand(VOLUP);
       delay(2);
       SendCommand(VOLUP);
       delay(20);
       value_radio_count++;
     }
-  } else if (speed < speed_radio_down) {
+  } else if (speed < RADIO_SPEED_DOWN) {
     if (value_radio_count > 0) {
       SendCommand(VOLDOWN);
       delay(2);
@@ -66,7 +66,6 @@ void Preamble() {
   delayMicroseconds(PULSEWIDTH * 16);
   digitalWrite(RADIO_PIN, HIGH);  // Second part of header, output HIGH 8 pulse widths
   delayMicroseconds(PULSEWIDTH * 8);
-
   // START BIT: always 1
   SendOne();
 }

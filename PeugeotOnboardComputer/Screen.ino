@@ -2,7 +2,7 @@ void startDisplay() {
   tft.begin(UCG_FONT_MODE_SOLID);  // It writes a background for the text. This is the recommended option
   tft.clearScreen();
   tft.setRotate270();  // Set display orientation. Put 90, 180 or 270, or comment to leave default
-  drawBitmap(22, 0, lion, 116, 128, 128);
+  drawBitmap(22, 0, lion, 116, 128);
   delay(3000);
   tft.clearScreen();
   display();
@@ -24,7 +24,7 @@ void colorOfDisplay() {
 void display() {
   colorOfDisplay();
   if (shutdown) {
-    drawBitmap(22, 0, lion, 116, 128, 128);
+    drawBitmap(22, 0, lion, 116, 128);
   } else if (volt < 11.3 && !shutdown) {
     timer3++;
     if (timer3 > 60) {
@@ -120,7 +120,6 @@ void screenCurrentTrip() {
     tft.print("min");
     tft.setPrintPos(100, (pos_y += 32));
     tft.print("L/100km");
-    
     isDrawNames = true;
   }
 
@@ -133,7 +132,6 @@ void screenCurrentTrip() {
   tft.setColor(0, colRed, colGreen, colBlue);
 
   pos_y = 0;
-
   tft.setFont(ucg_font_profont22_mr);
   tft.setPrintPos(64, (pos_y += 32));
   tft.print(liters_trip, 2);
@@ -162,7 +160,7 @@ void screenConsumption() {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
     drawNames("Consumption", "Average consumpt.", "Speed", "Avgerage speed");
-    isDrawNames = true;
+
     pos_y = 0;
     tft.setFont(ucg_font_8x13B_mr);
     tft.setPrintPos(100, (pos_y += 32));
@@ -173,7 +171,6 @@ void screenConsumption() {
     tft.print("km/h");
     tft.setPrintPos(125, (pos_y += 32));
     tft.print("km/h");
-
     isDrawNames = true;
   }
 
@@ -186,8 +183,6 @@ void screenConsumption() {
   tft.setColor(0, colRed, colGreen, colBlue);
 
   pos_y = 0;
-  tft.setFont(ucg_font_profont22_mr);
-
   tft.setFont(ucg_font_profont22_mr);
   tft.setPrintPos(40, (pos_y += 32));
   tft.print(consump, 1);
@@ -214,7 +209,6 @@ void screenOdometr() {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
     drawNames("Liters odometr", "Distance odometr", "Refuel", "Average consumpt.");
-    isDrawNames = true;
     tft.setFont(ucg_font_8x13B_mr);
     pos_y = 0;
 
@@ -229,7 +223,9 @@ void screenOdometr() {
 
     tft.setPrintPos(100, (pos_y += 32));
     tft.print("L/100km");
+    isDrawNames = true;
   }
+
   pos_y = 0;
   tft.setFont(ucg_font_profont22_mr);
 
@@ -261,8 +257,8 @@ void screenJoirnal() {
 
     pos_y = 32;
     tft.setFont(ucg_font_8x13B_mr);
-
-    for (i = 0; i < 4; i++) {
+    
+    for (byte i = 0; i < 4; i++) {
       tft.setPrintPos(55, pos_y);
       tft.print("km");
       tft.setPrintPos(147, pos_y);
@@ -308,7 +304,6 @@ void screenSensors() {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
     drawNames("Voltmeter", "Tank level", "Eng temp", "Eng temp raw");
-    isDrawNames = true;
     pos_y = 0;
     tft.setFont(ucg_font_8x13B_mr);
     tft.setPrintPos(147, (pos_y += 32));
@@ -319,8 +314,8 @@ void screenSensors() {
     tft.print("C");
     tft.setPrintPos(147, (pos_y += 32));
     tft.print("");
+    isDrawNames = true;
   }
-
   pos_y = 0;
   tft.setFont(ucg_font_profont22_mr);
 
@@ -336,7 +331,6 @@ void screenSensors() {
 
   tft.setFont(ucg_font_profont22_mr);
   tft.setPrintPos(80, (pos_y += 32));
-  // tft.print(60 - ((analogRead(TANK_PIN) - 125) / 7.5));
   tft.print(temp_eng);  
   tft.print(" ");
   tft.setFont(ucg_font_profont22_mr);
@@ -351,7 +345,6 @@ void screenOther() {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
     drawNames("Consumption", "Consumption", "Ins temp", "Ins temp raw");
-    isDrawNames = true;
     pos_y = 0;
     tft.setFont(ucg_font_8x13B_mr);
     tft.setPrintPos(132, (pos_y += 32));
@@ -360,6 +353,7 @@ void screenOther() {
     tft.print("us");    
     tft.setPrintPos(140, (pos_y += 32));
     tft.print("");
+    isDrawNames = true;    
   }
   pos_y = 0;
   tft.setFont(ucg_font_profont22_mr);
@@ -406,8 +400,7 @@ void drawNames(String s1, String s2, String s3, String s4) {
 }
 
 void drawBitmap(int16_t x, int16_t y,
-                const uint8_t *bitmap, int16_t w, int16_t h,
-                uint16_t color) {
+                const uint8_t *bitmap, int16_t w, int16_t h) {
   int16_t i, j, byteWidth = (w + 7) / 8;
   colorOfDisplay();
   tft.setColor(0, colRed, colGreen, colBlue);
