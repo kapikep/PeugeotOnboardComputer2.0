@@ -1,9 +1,11 @@
 #include <Ucglib.h>
+#include <SPI.h>
 #include <EEPROM.h>
 #include <math.h>
 #include "Bitmaps.h"
 
 Ucglib_ST7735_18x128x160_HWSPI tft(8, 6, 7);  // A0=8, RESET=7, CS=6, SDA=11, SCK=13
+
 #define INJ_PIN 2                             //Injector signal
 #define SPEED_PIN 3                           //Speed sensor
 #define ILLUMINATION_PIN 4                    //Parking lights, low - on
@@ -206,8 +208,8 @@ void measure() {
 }
 
 void temp_measure() {
-  float voltage = analogRead(TEMP_INSIDE_PIN) * VIN / 1024.0;
-  float r1 = voltage / (VIN - voltage);
+  float voltage_ins_temp = analogRead(TEMP_INSIDE_PIN) * VIN / 1024.0;
+  float r1 = voltage_ins_temp / (VIN - voltage_ins_temp);
   temp_ins = 1./( 1./(TERMIST_B)*log(r1)+1./(25. + 273.) ) - 273;  
   
   if (rpm > 0) {
