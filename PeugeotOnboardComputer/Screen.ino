@@ -360,7 +360,7 @@ void rawDataSreen() {
   if (long_press) {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
-    tft.setPrintPos(60, 70);
+    tft.setPrintPos(55, 70);
     tft.print("exit");
     delay(3000);
     sec_fl_scr = false;

@@ -40,9 +40,9 @@ int tank_avg_array[idx_array];
 byte idx_avg = 0;
 
 byte size_temp_matrix;
-unsigned long tank_avg;
+long tank_avg;
 
-boolean btnState, btnFlag, long_press, sec_fl_scr, shutdown, isDrawNames;  //(long press)
+boolean btnState, btnFlag, long_press, sec_fl_scr, shutdown, isDrawNames, first_start;
 unsigned long debounceTimer;
 
 unsigned long rpm;
@@ -225,21 +225,26 @@ void temp_measure() {
 
 void lvl() {
   if (rpm > 0) {
+    if (!first_start) {
+      first_start = true;
+      tank_avg = 60 - (analogRead(TANK_PIN) - 125) / 7.5;
+      if ((tank_avg - tank_lvl) > 5) {
+        tank_lvl = tank_avg;
+      }
+    }
     tank_avg_array[idx_avg] = analogRead(TANK_PIN);
     if (++idx_avg >= idx_array) {
-      idx_avg = 0;   // override oldest value
       tank_avg = 0;  // reset average
-      for (int i = 0; i < idx_array; i++) {
+      for (int i = 0; i < idx_avg; i++) {
         tank_avg += tank_avg_array[i];
       }
-      tank_avg /= idx_array;
-      tank_lvl = 60 - ((tank_avg - 125) / 7.5);
-      if (tank_lvl > 60) {
-        tank_lvl = 60;
-      }
+      tank_avg /= idx_avg;
+      tank_lvl = 60 - (tank_avg - 125) / 7.5;
+
       if (tank_lvl < 0) {
         tank_lvl = 0;
       }
+      idx_avg = 0;  // override oldest value
     }
   }
 }
