@@ -60,7 +60,7 @@ unsigned long distance_trip, prev_odo, speed_avg_count, distance_odo, count;
 unsigned long timer0, timer1, timer2;
 byte timer3 = 9, low_volt_timer;
 byte screen_num, value_radio_count;
-byte pos_y, colRed, colGreen, colBlue;
+byte pos_y, colRed = 0, colGreen = 255, colBlue = 255;
 boolean isParkingLiteOn;
 
 volatile unsigned long inj_time, inj_time_count;
@@ -89,6 +89,7 @@ void setup() {
   range = tank_lvl / consump_odo * 100;
   size_temp_matrix = sizeof(temp_matrix) / (sizeof(int) * 2) - 1;
   isParkingLiteOn = digitalRead(ILLUMINATION_PIN);
+  colorOfDisplay();
   startDisplay();
 }
 
@@ -196,6 +197,9 @@ void measure() {
 
   if (speed > 0) {
     consump = l_h * 100 / speed;
+    if (consump >= 100) {
+      consump = 99;
+    }
     consump_graphical = consump * 12;
     if (consump_graphical > 160) {
       consump_graphical = 160;
@@ -260,7 +264,7 @@ void button() {
     debounceTimer = millis();                                      // save time release
     if (!long_press && !sec_fl_scr) {
       screen_num++;
-      if (screen_num > 5) screen_num = 0;
+      if (screen_num > 4) screen_num = 0;
     }
     isDrawNames = false;
     long_press = false;

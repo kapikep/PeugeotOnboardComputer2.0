@@ -1,5 +1,4 @@
 void startDisplay() {
-  delay(1000);
   tft.begin(UCG_FONT_MODE_TRANSPARENT);  // It writes a background for the text. This is the recommended option
   tft.clearScreen();
   tft.setRotate270();  // Set display orientation. Put 90, 180 or 270, or comment to leave default
@@ -48,7 +47,7 @@ void display() {
     tft.setPrintPos(5, 70);
     tft.print("OVERHEAT!!!");
     isDrawNames = false;
-  } else if ((long_press || sec_fl_scr) && (screen_num == 1 || screen_num == 4)) {
+  } else if ((long_press || sec_fl_scr) && (screen_num == 1 || screen_num == 2 || screen_num == 4)) {
     if (!sec_fl_scr) {
       sec_fl_scr = true;
       tft.clearScreen();
@@ -57,8 +56,10 @@ void display() {
     }
     if (screen_num == 1) {
       resetOdoScreen();
+    } else if (screen_num == 2) {
+      screenOther();
     } else if (screen_num == 4) {
-      rawDataSreen();
+      rawDataScreen();
     }
   } else {
     switch (screen_num) {
@@ -76,9 +77,6 @@ void display() {
         break;
       case 4:
         screenSensors();
-        break;
-      case 5:
-        screenOther();
         break;
     }
   }
@@ -248,6 +246,11 @@ void screenSensors() {
 
 void screenOther() {
   if (!isDrawNames) {
+    tft.clearScreen();
+    tft.setColor(0, colRed, colGreen, colBlue);
+    tft.setPrintPos(55, 70);
+    tft.print("other");
+    delay(3000);
     drawNames("Consumption", "Inj. time (us)", "RPM", "");
     drawMeasurementUnit(132, "L/h", 140, "", 140, "", 140, "");
     isDrawNames = true;
@@ -273,6 +276,15 @@ void screenOther() {
   tft.print("");
   tft.print(" ");
   button();
+
+  if (long_press) {
+    tft.clearScreen();
+    tft.setColor(0, colRed, colGreen, colBlue); //??
+    tft.setPrintPos(55, 70);
+    tft.print("exit");
+    delay(3000);
+    sec_fl_scr = false;
+  }
 }
 
 void resetOdoScreen() {
@@ -281,7 +293,7 @@ void resetOdoScreen() {
   tft.print("Reset odo?");
   tft.setPrintPos(10, 80);
   tft.setFont(ucg_font_8x13B_mr);
-  tft.print("(press button)");
+  tft.print("(hold button)");
   tft.setPrintPos(140, 80);
   tft.print(timer3--);
   tft.print("  ");
@@ -310,7 +322,7 @@ void resetOdoScreen() {
   }
 }
 
-void rawDataSreen() {
+void rawDataScreen() {
   if (!isDrawNames) {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
@@ -420,7 +432,7 @@ void drawConsumpLine() {
 void drawBitmap(int16_t x, int16_t y,
                 const uint8_t *bitmap, int16_t w, int16_t h) {
   int16_t i, j, byteWidth = (w + 7) / 8;
-  colorOfDisplay();
+  
   tft.setColor(0, colRed, colGreen, colBlue);
 
   for (j = 0; j < h; j++) {
