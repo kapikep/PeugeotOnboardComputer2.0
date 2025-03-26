@@ -73,7 +73,9 @@ void display() {
         screenConsumption();
         break;
       case 3:
-        screenJoirnal();
+        // screenJoirnal();
+        bigSpeed();
+
         break;
       case 4:
         screenSensors();
@@ -128,6 +130,7 @@ void screenConsumption() {
   tft.print(" ");
 
   tft.setPrintPos(64, (pos_y += 32));
+  // tft.setFont(ucg_font_logisoso62_tn);
   tft.print(speed);
   tft.print(" ");
   button();
@@ -251,7 +254,7 @@ void screenOther() {
     tft.setPrintPos(55, 70);
     tft.print("other");
     delay(3000);
-    drawNames("Consumption", "Inj. time (us)", "RPM", "");
+    drawNames("Consumption", "Inj. time (us)", "RPM", "motor operating");
     drawMeasurementUnit(132, "L/h", 140, "", 140, "", 140, "");
     isDrawNames = true;
   }
@@ -272,14 +275,18 @@ void screenOther() {
   tft.print("     ");
   button();
 
-  tft.setPrintPos(70, (pos_y += 32));
-  tft.print("");
-  tft.print(" ");
+  tft.setPrintPos(0, (pos_y += 32));
+  tft.print(motor_operating_seconds_trip / 60);
+  tft.print("   ");
+  tft.setPrintPos(100, pos_y);
+  tft.print(motor_operating_seconds / 60);
+  // motor_operating_seconds=0;
+  tft.print("   ");
   button();
 
   if (long_press) {
     tft.clearScreen();
-    tft.setColor(0, colRed, colGreen, colBlue); //??
+    tft.setColor(0, colRed, colGreen, colBlue);  //??
     tft.setPrintPos(55, 70);
     tft.print("exit");
     delay(3000);
@@ -322,6 +329,22 @@ void resetOdoScreen() {
   }
 }
 
+void bigSpeed() {
+  if (!isDrawNames) {
+    drawNames("", "", "", "");
+    isDrawNames = true;
+    tft.setFontMode(UCG_FONT_MODE_SOLID);
+  }
+  // tft.setFont(ucg_font_timR24_hn);
+  // tft.setFont(ucg_font_robot_de_niro_tr);
+  button();
+  tft.setFont(ucg_font_inb63_mn);
+  tft.setPrintPos(5, 100);
+  tft.print(speed);
+  tft.print("     ");
+  button();
+}
+
 void rawDataScreen() {
   if (!isDrawNames) {
     tft.clearScreen();
@@ -342,7 +365,7 @@ void rawDataScreen() {
   tft.print(volt, 1);
   tft.print(" ");
 
-  tft.setFont(ucg_font_profont22_mr);
+  // tft.setFont(ucg_font_profont22_mr);
   tft.setPrintPos(0, (pos_y += 32));
   tft.print(60 - (analogRead(TANK_PIN) - 125) / 7.5);
   tft.print(" ");
@@ -351,7 +374,7 @@ void rawDataScreen() {
   tft.print(" ");
   button();
 
-  tft.setFont(ucg_font_profont22_mr);
+  // tft.setFont(ucg_font_profont22_mr);
   tft.setPrintPos(0, (pos_y += 32));
   tft.print(analogRead(TEMP_ENG_PIN));
   tft.print(" ");
@@ -360,7 +383,7 @@ void rawDataScreen() {
   tft.print(" ");
   button();
 
-  tft.setFont(ucg_font_profont22_mr);
+  // tft.setFont(ucg_font_profont22_mr);
   tft.setPrintPos(0, (pos_y += 32));
   tft.print(analogRead(TEMP_INSIDE_PIN));
   tft.print(" ");
@@ -432,7 +455,7 @@ void drawConsumpLine() {
 void drawBitmap(int16_t x, int16_t y,
                 const uint8_t *bitmap, int16_t w, int16_t h) {
   int16_t i, j, byteWidth = (w + 7) / 8;
-  
+
   tft.setColor(0, colRed, colGreen, colBlue);
 
   for (j = 0; j < h; j++) {

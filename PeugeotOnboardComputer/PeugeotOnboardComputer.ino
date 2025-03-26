@@ -50,7 +50,7 @@ float liters_trip, l_h, liters_odo;
 float liters_last_trip_0, liters_last_trip_1, liters_last_trip_2, liters_last_trip_3;
 unsigned long distance_last_trip_0, distance_last_trip_1, distance_last_trip_2, distance_last_trip_3;
 unsigned long fuel_count;
-int motor_hours, motor_hours_trip;
+unsigned long motor_operating_seconds, motor_operating_seconds_trip;
 float consump, consump_avg, consump_odo;
 int consump_graphical;
 byte speed;
@@ -141,7 +141,7 @@ void writeEEPROM() {
   EEPROM.put(4, liters_odo += liters_trip);
   EEPROM.put(8, tank_lvl);
   EEPROM.put(12, screen_num);
-  EEPROM.put(48, motor_hours += motor_hours_trip);
+  EEPROM.put(48, motor_operating_seconds += motor_operating_seconds_trip);
 
   if (liters_trip > 0.2) {
     EEPROM.put(16, liters_trip);
@@ -168,11 +168,11 @@ void readEEPROM() {
   EEPROM.get(36, distance_last_trip_2);
   EEPROM.get(40, liters_last_trip_3);
   EEPROM.get(44, distance_last_trip_3);
-  EEPROM.get(48, motor_hours);
+  EEPROM.get(48, motor_operating_seconds);
 }
 
 void measure() {
-  distance_trip = speed_count * 2;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
+  distance_trip = speed_count * 2 * 0.96;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
   speed = (distance_trip - prev_odo) * 36 * (1000.0 / delta) / 100;
   prev_odo = distance_trip;
   distance_trip /= 10;                              //conversion to meters
@@ -185,6 +185,7 @@ void measure() {
     liters_trip = fuel_count * 1e-6;
     speed_avg_count += speed;
     count++;
+    motor_operating_seconds_trip++;
     speed_avg = speed_avg_count / count;
   } else
     l_h = 0;
