@@ -30,24 +30,11 @@ void display() {
   } else if (volt < 11.3 && !shutdown) {
     timer3++;
     if (timer3 > 30) {
-      tft.clearScreen();
-      tft.setColor(0, 255, 0, 0);
-      tft.setFont(ucg_font_profont22_mr);
-      tft.setPrintPos(5, 60);
-      tft.print("LOW BATTERY!!");
-      tft.setPrintPos(50, 90);
-      tft.print(volt, 1);
-      tft.setPrintPos(100, 90);
-      tft.print("V");
-      isDrawNames = false;
+      lowBattery();
     }
   } else if (rpm > 500 && temp_eng > 105) {
-    tft.setColor(0, 255, 0, 0);
-    tft.setFont(ucg_font_profont22_mr);
-    tft.setPrintPos(5, 70);
-    tft.print("OVERHEAT!!!");
-    isDrawNames = false;
-  } else if ((long_press || sec_fl_scr) && (screen_num == 1 || screen_num == 2 || screen_num == 4)) {
+    overheat();
+  } else if ((long_press || sec_fl_scr) && screen_num != 0) {
     if (!sec_fl_scr) {
       sec_fl_scr = true;
       tft.clearScreen();
@@ -55,11 +42,13 @@ void display() {
       isDrawNames = false;
     }
     if (screen_num == 1) {
-      resetOdoScreen();
-    } else if (screen_num == 2) {
       screenOther();
-    } else if (screen_num == 4) {
+    } else if (screen_num == 2) {
+      resetOdoScreen();
+    } else if (screen_num == 3) {
       rawDataScreen();
+    } else if (screen_num == 4) {
+      resetOilServiceScreen();
     }
   } else {
     switch (screen_num) {
@@ -67,18 +56,16 @@ void display() {
         screenCurrentTrip();
         break;
       case 1:
-        screenOdometr();
-        break;
-      case 2:
         screenConsumption();
         break;
+      case 2:
+        screenOdometr();
+        break;
       case 3:
-        // screenJoirnal();
-        bigSpeed();
-
+        screenSensors();
         break;
       case 4:
-        screenSensors();
+        screenJoirnal();
         break;
     }
   }
@@ -92,52 +79,56 @@ void screenCurrentTrip() {
   }
   drawConsumpLine();
   tft.setFont(ucg_font_profont22_mr);
-  pos_y = 0;
-  tft.setPrintPos(64, (pos_y += 32));
+ 
+  tft.setPrintPos(64, 32);
   tft.print(liters_trip, 2);
   tft.print(" ");
 
-  tft.setPrintPos(64, (pos_y += 32));
+  tft.setPrintPos(64, 64);
   tft.print((distance_trip / 1000.0), 1);
   tft.print(" ");
   button();
 
-  tft.setPrintPos(64, (pos_y += 32));
+  tft.setPrintPos(64, 96);
   tft.print(millis() / 60000);
   tft.print(" ");
   button();
 
-  tft.setPrintPos(40, (pos_y += 32));
+  tft.setPrintPos(40, 128);
   tft.print(consump_avg, 1);
   tft.print(" ");
 }
 
 void screenConsumption() {
   if (!isDrawNames) {
-    drawNames("Consumption", "Average consumpt.", "Speed", "Avgerage speed");
-    drawMeasurementUnit(100, "L/100km", 100, "L/100km", 125, "km/h", 125, "km/h");
+    drawNames("", "", "", "Consumpt. cur./avg.");
     isDrawNames = true;
+    tft.setFontMode(UCG_FONT_MODE_SOLID);
   }
   drawConsumpLine();
-  pos_y = 0;
-  tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(40, (pos_y += 32));
-  tft.print(consump, 1);
-  tft.print(" ");
-
-  tft.setPrintPos(40, (pos_y += 32));
-  tft.print(consump_avg, 1);
-  tft.print(" ");
-
-  tft.setPrintPos(64, (pos_y += 32));
-  // tft.setFont(ucg_font_logisoso62_tn);
+  button();
+  tft.setFont(ucg_font_inb57_mn);
+  tft.setPrintPos(10, 62);
   tft.print(speed);
-  tft.print(" ");
+  tft.print("  ");
   button();
 
-  tft.setPrintPos(64, (pos_y += 32));
+  tft.setFont(ucg_font_8x13B_mr);
+  tft.setPrintPos(5, 90);
+  tft.print("Speed avg.");
+  button();
+  tft.setFont(ucg_font_profont22_mr);
+  tft.setPrintPos(100, 93);
   tft.print(speed_avg);
-  tft.print(" ");
+  tft.print("   ");
+  button();
+  tft.setPrintPos(5, 128);
+  tft.print(consump, 1);
+  tft.print("   ");
+  tft.setPrintPos(100, 128);
+  tft.print(consump_avg, 1);
+  tft.print("   ");
+  button();
 }
 
 void screenOdometr() {
@@ -146,22 +137,22 @@ void screenOdometr() {
     drawMeasurementUnit(147, "L", 140, "km", 140, "km", 100, "L/100km");
     isDrawNames = true;
   }
-  pos_y = 0;
+ 
   tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(64, (pos_y += 32));
+  tft.setPrintPos(64, 32);
   tft.print(liters_odo, 1);
   tft.print(" ");
 
-  tft.setPrintPos(64, (pos_y += 32));
+  tft.setPrintPos(64, 64);
   tft.print(distance_odo / 1000.0, 1);
   tft.print(" ");
   button();
 
-  tft.setPrintPos(64, (pos_y += 32));
+  tft.setPrintPos(64, 96);
   tft.print(range);
   tft.print(" ");
 
-  tft.setPrintPos(40, (pos_y += 32));
+  tft.setPrintPos(40, 128);
   tft.print(consump_odo, 1);
   tft.print(" ");
   button();
@@ -185,37 +176,33 @@ void screenJoirnal() {
       tft.print("L");
       pos_y += 32;
     }
-    pos_y = 0;
+   
     tft.setFont(ucg_font_profont22_mr);
 
-    tft.setPrintPos(5, (pos_y + 32));
-    tft.print(distance_last_trip_0 / 1000);
+    tft.setPrintPos(5, 32);
+    tft.print(distance_last_trip_0);
 
-    tft.setPrintPos(90, (pos_y + 32));
+    tft.setPrintPos(90, 32);
     tft.print(liters_last_trip_0, 1);
-    pos_y += 32;
     button();
 
-    tft.setPrintPos(5, (pos_y + 32));
-    tft.print(distance_last_trip_1 / 1000);
+    tft.setPrintPos(5, 64);
+    tft.print(distance_last_trip_1);
 
-    tft.setPrintPos(90, (pos_y + 32));
+    tft.setPrintPos(90, 64);
     tft.print(liters_last_trip_1, 1);
-    pos_y += 32;
 
-    tft.setPrintPos(5, (pos_y + 32));
-    tft.print(distance_last_trip_2 / 1000);
+    tft.setPrintPos(5, 96);
+    tft.print(distance_last_trip_2);
 
-    tft.setPrintPos(90, (pos_y + 32));
+    tft.setPrintPos(90, 96);
     tft.print(liters_last_trip_2, 1);
-    pos_y += 32;
 
-    tft.setPrintPos(5, (pos_y + 32));
-    tft.print(distance_last_trip_3 / 1000);
+    tft.setPrintPos(5, 128);
+    tft.print(distance_last_trip_3);
 
-    tft.setPrintPos(90, (pos_y + 32));
+    tft.setPrintPos(90, 128);
     tft.print(liters_last_trip_3, 1);
-    pos_y += 32;
     tft.setFontMode(UCG_FONT_MODE_SOLID);
   }
 }
@@ -226,22 +213,22 @@ void screenSensors() {
     drawMeasurementUnit(147, "V", 147, "L", 147, "C", 147, "C");
     isDrawNames = true;
   }
-  pos_y = 0;
+
   tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(80, (pos_y += 32));
+  tft.setPrintPos(80, 32);
   tft.print(volt, 1);
   tft.print(" ");
 
-  tft.setPrintPos(80, (pos_y += 32));
+  tft.setPrintPos(80, 64);
   tft.print(tank_lvl);
   tft.print(" ");
   button();
 
-  tft.setPrintPos(80, (pos_y += 32));
+  tft.setPrintPos(80, 96);
   tft.print(temp_eng);
   tft.print(" ");
 
-  tft.setPrintPos(80, (pos_y += 32));
+  tft.setPrintPos(80, 128);
   tft.print(temp_ins);
   tft.print("   ");
   button();
@@ -251,37 +238,28 @@ void screenOther() {
   if (!isDrawNames) {
     tft.clearScreen();
     tft.setColor(0, colRed, colGreen, colBlue);
-    tft.setPrintPos(55, 70);
+    tft.setPrintPos(53, 70);
     tft.print("other");
-    delay(3000);
-    drawNames("Consumption", "Inj. time (us)", "RPM", "motor operating");
+    delay(2000);
+    drawNames("Consumption", "Inj. time (us)", "RPM", "");
     drawMeasurementUnit(132, "L/h", 140, "", 140, "", 140, "");
     isDrawNames = true;
   }
-  pos_y = 0;
+
   tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(70, (pos_y += 32));
+  tft.setPrintPos(70, 32);
   tft.print(l_h, 1);
   tft.print(" ");
   button();
 
-  tft.setPrintPos(70, (pos_y += 32));
+  tft.setPrintPos(70, 64);
   tft.print(inj_time);
   tft.print("       ");
   button();
 
-  tft.setPrintPos(70, (pos_y += 32));
+  tft.setPrintPos(70, 96);
   tft.print(rpm);
   tft.print("     ");
-  button();
-
-  tft.setPrintPos(0, (pos_y += 32));
-  tft.print(motor_operating_seconds_trip / 60);
-  tft.print("   ");
-  tft.setPrintPos(100, pos_y);
-  tft.print(motor_operating_seconds / 60);
-  // motor_operating_seconds=0;
-  tft.print("   ");
   button();
 
   if (long_press) {
@@ -289,60 +267,9 @@ void screenOther() {
     tft.setColor(0, colRed, colGreen, colBlue);  //??
     tft.setPrintPos(55, 70);
     tft.print("exit");
-    delay(3000);
+    delay(2000);
     sec_fl_scr = false;
   }
-}
-
-void resetOdoScreen() {
-  tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(20, 50);
-  tft.print("Reset odo?");
-  tft.setPrintPos(10, 80);
-  tft.setFont(ucg_font_8x13B_mr);
-  tft.print("(hold button)");
-  tft.setPrintPos(140, 80);
-  tft.print(timer3--);
-  tft.print("  ");
-  tft.setFont(ucg_font_profont22_mr);
-
-  if (long_press && timer3 < 7) {
-    tft.clearScreen();
-    tft.setColor(0, colRed, colGreen, colBlue);
-    EEPROM.put(0, distance_odo = 0);
-    EEPROM.put(4, liters_odo = 0);
-    consump_avg = 0;
-    range = 0;
-    tft.setPrintPos(50, 70);
-    tft.print("Done!");
-    delay(3000);
-    sec_fl_scr = false;
-    timer3 = 9;
-  } else if (timer3 == 255) {
-    tft.clearScreen();
-    tft.setColor(0, colRed, colGreen, colBlue);
-    tft.setPrintPos(25, 70);
-    tft.print("Time's up");
-    delay(3000);
-    sec_fl_scr = false;
-    timer3 = 9;
-  }
-}
-
-void bigSpeed() {
-  if (!isDrawNames) {
-    drawNames("", "", "", "");
-    isDrawNames = true;
-    tft.setFontMode(UCG_FONT_MODE_SOLID);
-  }
-  // tft.setFont(ucg_font_timR24_hn);
-  // tft.setFont(ucg_font_robot_de_niro_tr);
-  button();
-  tft.setFont(ucg_font_inb63_mn);
-  tft.setPrintPos(5, 100);
-  tft.print(speed);
-  tft.print("     ");
-  button();
 }
 
 void rawDataScreen() {
@@ -351,43 +278,40 @@ void rawDataScreen() {
     tft.setColor(0, colRed, colGreen, colBlue);
     tft.setPrintPos(15, 70);
     tft.print("engineering");
-    delay(3000);
+    delay(2000);
     drawNames("Voltmeter", "Tank level", "Eng temp", "Inside temp");
     isDrawNames = true;
     tft.setFontMode(UCG_FONT_MODE_SOLID);
   }
-  pos_y = 0;
+ 
   tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(0, (pos_y += 32));
+  tft.setPrintPos(0, 32);
   tft.print(analogRead(VOLT_PIN), 1);
   tft.print(" ");
-  tft.setPrintPos(100, pos_y);
+  tft.setPrintPos(100, 32);
   tft.print(volt, 1);
   tft.print(" ");
 
-  // tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(0, (pos_y += 32));
+  tft.setPrintPos(0, 64);
   tft.print(60 - (analogRead(TANK_PIN) - 125) / 7.5);
   tft.print(" ");
-  tft.setPrintPos(100, pos_y);
+  tft.setPrintPos(100, 64);
   tft.print(tank_lvl);
   tft.print(" ");
   button();
 
-  // tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(0, (pos_y += 32));
+  tft.setPrintPos(0, 96);
   tft.print(analogRead(TEMP_ENG_PIN));
   tft.print(" ");
-  tft.setPrintPos(100, pos_y);
+  tft.setPrintPos(100, 96);
   tft.print(temp_eng);
   tft.print(" ");
   button();
 
-  // tft.setFont(ucg_font_profont22_mr);
-  tft.setPrintPos(0, (pos_y += 32));
+  tft.setPrintPos(0, 128);
   tft.print(analogRead(TEMP_INSIDE_PIN));
   tft.print(" ");
-  tft.setPrintPos(100, pos_y);
+  tft.setPrintPos(100, 128);
   tft.print(temp_ins);
   tft.print(" ");
   button();
@@ -397,46 +321,44 @@ void rawDataScreen() {
     tft.setColor(0, colRed, colGreen, colBlue);
     tft.setPrintPos(55, 70);
     tft.print("exit");
-    delay(3000);
+    delay(2000);
     sec_fl_scr = false;
   }
 }
 
 void drawNames(String s1, String s2, String s3, String s4) {
-  //128 / 4 = 32
   tft.clearScreen();
   tft.setColor(0, colRed, colGreen, colBlue);
   tft.setFontMode(UCG_FONT_MODE_TRANSPARENT);
   tft.setFont(ucg_font_8x13B_mr);
 
-  pos_y = 13;
-  tft.setPrintPos(5, pos_y);
+  tft.setPrintPos(5, 13);
   tft.print(s1);
   button();
-  tft.setPrintPos(5, (pos_y += 32));
+  tft.setPrintPos(5, 45);
   tft.print(s2);
   button();
-  tft.setPrintPos(5, (pos_y += 32));
+  tft.setPrintPos(5, 77);
   tft.print(s3);
   button();
-  tft.setPrintPos(5, (pos_y += 32));
+  tft.setPrintPos(5, 109);
   tft.print(s4);
 }
 
 void drawMeasurementUnit(int16_t pos1, String unit1, int16_t pos2, String unit2,
                          int16_t pos3, String unit3, int16_t pos4, String unit4) {
   tft.setFont(ucg_font_8x13B_mr);
-  pos_y = 0;
-  tft.setPrintPos(pos1, (pos_y += 32));
+  
+  tft.setPrintPos(pos1, 32);
   tft.print(unit1);
 
-  tft.setPrintPos(pos2, (pos_y += 32));
+  tft.setPrintPos(pos2, 64);
   tft.print(unit2);
 
-  tft.setPrintPos(pos3, (pos_y += 32));
+  tft.setPrintPos(pos3, 96);
   tft.print(unit3);
 
-  tft.setPrintPos(pos4, (pos_y += 32));
+  tft.setPrintPos(pos4, 128);
   tft.print(unit4);
 
   tft.setFontMode(UCG_FONT_MODE_SOLID);
@@ -465,4 +387,101 @@ void drawBitmap(int16_t x, int16_t y,
       }
     }
   }
+}
+
+void resetOdoScreen() {
+  tft.setFont(ucg_font_profont22_mr);
+  tft.setPrintPos(20, 50);
+  tft.print("Reset odo?");
+  tft.setPrintPos(10, 80);
+  tft.setFont(ucg_font_8x13B_mr);
+  tft.print("(hold button)");
+  tft.setPrintPos(140, 80);
+  tft.print(timer3--);
+  tft.print("  ");
+  tft.setFont(ucg_font_profont22_mr);
+
+  if (long_press && timer3 < 7) {
+    tft.clearScreen();
+    tft.setColor(0, colRed, colGreen, colBlue);
+    distance_odo = 0;
+    liters_odo = 0;
+    consump_avg = 0;
+    range = 0;
+    tft.setPrintPos(50, 70);
+    tft.print("Done!");
+    delay(2000);
+    sec_fl_scr = false;
+    timer3 = 9;
+  } else if (timer3 == 255) {
+    tft.clearScreen();
+    tft.setColor(0, colRed, colGreen, colBlue);
+    tft.setPrintPos(25, 70);
+    tft.print("Time's up");
+    delay(2000);
+    sec_fl_scr = false;
+    timer3 = 9;
+  }
+}
+
+void resetOilServiceScreen() {
+  tft.setFont(ucg_font_profont22_mr);
+  tft.setPrintPos(0, 50);
+  tft.print("Reset service");
+  tft.setFont(ucg_font_8x13B_mr);
+  tft.setPrintPos(10, 80);
+  tft.print("(hold button)");
+  tft.setPrintPos(140, 80);
+  tft.print(timer3--);
+  tft.print("  ");
+  tft.setPrintPos(10, 108);
+  tft.print("hours");
+  tft.setPrintPos(110, 108);
+  tft.print(motor_operating_millis / 3600000);
+  tft.setPrintPos(10, 128);
+  tft.print("odo");
+  tft.setPrintPos(110, 128);
+  tft.print(service_odo / 1000);
+  tft.setFont(ucg_font_profont22_mr);
+
+  if (long_press && timer3 < 7) {
+    tft.clearScreen();
+    tft.setColor(0, colRed, colGreen, colBlue);
+    motor_operating_millis = 0;
+    service_odo = 0; 
+    tft.setPrintPos(50, 70);
+    tft.print("Done!");
+    delay(2000);
+    sec_fl_scr = false;
+    timer3 = 9;
+  } else if (timer3 == 255) {
+    tft.clearScreen();
+    tft.setColor(0, colRed, colGreen, colBlue);
+    tft.setPrintPos(25, 70);
+    tft.print("Time's up");
+    delay(2000);
+    sec_fl_scr = false;
+    timer3 = 9;
+  }
+}
+
+void lowBattery() {
+  tft.clearScreen();
+  tft.setColor(0, 255, 0, 0);
+  tft.setFont(ucg_font_profont22_mr);
+  tft.setPrintPos(5, 60);
+  tft.print("LOW BATTERY!!");
+  tft.setPrintPos(50, 90);
+  tft.print(volt, 1);
+  tft.setPrintPos(100, 90);
+  tft.print("V");
+  isDrawNames = false;
+}
+
+void overheat() {
+  tft.setColor(0, 255, 0, 0);
+  tft.setFont(ucg_font_profont22_mr);
+  tft.setPrintPos(5, 70);
+  tft.print("OVERHEAT!!!");
+  isDrawNames = false;
 }

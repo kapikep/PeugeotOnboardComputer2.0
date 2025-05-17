@@ -48,18 +48,19 @@ unsigned long debounceTimer;
 unsigned long rpm;
 float liters_trip, l_h, liters_odo;
 float liters_last_trip_0, liters_last_trip_1, liters_last_trip_2, liters_last_trip_3;
-unsigned long distance_last_trip_0, distance_last_trip_1, distance_last_trip_2, distance_last_trip_3;
+int distance_last_trip_0, distance_last_trip_1, distance_last_trip_2, distance_last_trip_3; //km
 unsigned long fuel_count;
-unsigned long motor_operating_seconds, motor_operating_seconds_trip;
+unsigned long motor_operating_millis, motor_operating_millis_trip;
 float consump, consump_avg, consump_odo;
 int consump_graphical;
 byte speed;
 int speed_avg;
-unsigned long distance_trip, prev_odo, speed_avg_count, distance_odo, count;
+unsigned long distance_trip, prev_odo, speed_avg_count, distance_odo, count, service_odo;
+unsigned int eeprom_write_count;
 
 unsigned long timer0, timer1, timer2;
 byte timer3 = 9, low_volt_timer;
-byte screen_num, value_radio_count;
+byte screen_num = 0, value_radio_count;
 byte pos_y, colRed = 0, colGreen = 255, colBlue = 255;
 boolean isParkingLiteOn;
 
@@ -81,6 +82,7 @@ void setup() {
   pinMode(PWR_COMTROL_PIN, OUTPUT);
   digitalWrite(PWR_COMTROL_PIN, HIGH);
   readEEPROM();
+  // Serial.begin(9600);
   if (distance_odo != 0) {
     consump_odo = liters_odo * 1e5 / distance_odo;
   } else {
@@ -117,7 +119,7 @@ void loop() {
 void pwr_manager() {
   if (volt < 5) {
     low_volt_timer++;
-    if (low_volt_timer == 5) {
+    if (low_volt_timer == 4) {
       tft.clearScreen();
       shutdown = true;
     }
@@ -136,56 +138,21 @@ void pwr_manager() {
   }
 }
 
-void writeEEPROM() {
-  EEPROM.put(0, distance_odo += distance_trip);
-  EEPROM.put(4, liters_odo += liters_trip);
-  EEPROM.put(8, tank_lvl);
-  EEPROM.put(12, screen_num);
-  EEPROM.put(48, motor_operating_seconds += motor_operating_seconds_trip);
-
-  if (liters_trip > 0.2) {
-    EEPROM.put(16, liters_trip);
-    EEPROM.put(20, distance_trip);
-    EEPROM.put(24, liters_last_trip_0);
-    EEPROM.put(28, distance_last_trip_0);
-    EEPROM.put(32, liters_last_trip_1);
-    EEPROM.put(36, distance_last_trip_1);
-    EEPROM.put(40, liters_last_trip_2);
-    EEPROM.put(44, distance_last_trip_2);
-  }
-}
-
-void readEEPROM() {
-  EEPROM.get(0, distance_odo);
-  EEPROM.get(4, liters_odo);
-  EEPROM.get(8, tank_lvl);
-  EEPROM.get(12, screen_num);
-  EEPROM.get(16, liters_last_trip_0);
-  EEPROM.get(20, distance_last_trip_0);
-  EEPROM.get(24, liters_last_trip_1);
-  EEPROM.get(28, distance_last_trip_1);
-  EEPROM.get(32, liters_last_trip_2);
-  EEPROM.get(36, distance_last_trip_2);
-  EEPROM.get(40, liters_last_trip_3);
-  EEPROM.get(44, distance_last_trip_3);
-  EEPROM.get(48, motor_operating_seconds);
-}
-
 void measure() {
-  distance_trip = speed_count * 2 * 0.96;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
+  distance_trip = speed_count * 2;  //10 pulses per 1 мeters (5 periods) -> 0.2м per period. *0.96 winter not original tires
   speed = (distance_trip - prev_odo) * 36 * (1000.0 / delta) / 100;
   prev_odo = distance_trip;
   distance_trip /= 10;                              //conversion to meters
-  volt = analogRead(VOLT_PIN) * 16 / 1024.0 + 0.1;  //VREF * ((DIV_R1 + DIV_R2) / DIV_R2) (R1 = 10, R2 = 4.7) 15.64?
+  volt = analogRead(VOLT_PIN) * 16 / 1024.0;  //VREF * ((DIV_R1 + DIV_R2) / DIV_R2) (R1 = 10, R2 = 4.7) 15.64?
 
   if (rpm > 0) {
+    motor_operating_millis_trip += delta;
     l_h = inj_time * rpm * 2e-5 * fuel_inj_flow;  //instant consumption
     l_h *= 1e-4;
     fuel_count = inj_time_count * 1e-3 * fuel_inj_flow * 4 / 60;  // мм3, max 43 L per trip. Paired injection, but 1 crank eng - 1 impulse * 2 injectors
     liters_trip = fuel_count * 1e-6;
     speed_avg_count += speed;
     count++;
-    motor_operating_seconds_trip++;
     speed_avg = speed_avg_count / count;
   } else
     l_h = 0;
@@ -273,6 +240,45 @@ void button() {
   if (btnState && btnFlag && !long_press && millis() - debounceTimer > 2000) {  //long press
     long_press = true;
   }
+}
+
+void writeEEPROM() {
+  EEPROM.put(0, distance_odo += distance_trip);
+  EEPROM.put(4, liters_odo += liters_trip);
+  EEPROM.put(8, tank_lvl);
+  // EEPROM.put(12, screen_num); //to save screen number option
+  EEPROM.put(48, motor_operating_millis += motor_operating_millis_trip);
+  EEPROM.put(52, service_odo += distance_trip);
+  EEPROM.put(56, eeprom_write_count++);
+
+  if (liters_trip > 0.2) {
+    EEPROM.put(16, liters_trip);
+    EEPROM.put(20, distance_trip / 1000);
+    EEPROM.put(24, liters_last_trip_0);
+    EEPROM.put(28, distance_last_trip_0);
+    EEPROM.put(32, liters_last_trip_1);
+    EEPROM.put(36, distance_last_trip_1);
+    EEPROM.put(40, liters_last_trip_2);
+    EEPROM.put(44, distance_last_trip_2);
+  }
+}
+
+void readEEPROM() {
+  EEPROM.get(0, distance_odo);
+  EEPROM.get(4, liters_odo);
+  EEPROM.get(8, tank_lvl);
+  // EEPROM.get(12, screen_num); //to read screen number option
+  EEPROM.get(16, liters_last_trip_0);
+  EEPROM.get(20, distance_last_trip_0);
+  EEPROM.get(24, liters_last_trip_1);
+  EEPROM.get(28, distance_last_trip_1);
+  EEPROM.get(32, liters_last_trip_2);
+  EEPROM.get(36, distance_last_trip_2);
+  EEPROM.get(40, liters_last_trip_3);
+  EEPROM.get(44, distance_last_trip_3);
+  EEPROM.get(48, motor_operating_millis);
+  EEPROM.get(52, service_odo);
+  EEPROM.get(56, eeprom_write_count);
 }
 
 void inj_func() {
