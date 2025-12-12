@@ -183,6 +183,9 @@ void temp_measure() {
   float voltage_ins_temp = analogRead(TEMP_INSIDE_PIN) * VIN / 1024.0;
   float r1 = voltage_ins_temp / (VIN - voltage_ins_temp);
   temp_ins = 1. / (1. / (TERMIST_B)*log(r1) + 1. / (25. + 273.)) - 273;
+  if(temp_ins == -273) {
+    temp_ins = 0;
+  }
 
   if (rpm > 0) {
     temp = analogRead(TEMP_ENG_PIN);
@@ -199,7 +202,7 @@ void lvl() {
   if (rpm > 0) {
     if (!first_start) {
       first_start = true;
-      tank_avg = 60 - (analogRead(TANK_PIN) - 125) / 7.5;
+      tank_avg = 60 - (analogRead(TANK_PIN) - 130) / 7.5;
       if ((tank_avg - tank_lvl) > 5) {
         tank_lvl = tank_avg;
       }
@@ -211,7 +214,7 @@ void lvl() {
         tank_avg += tank_avg_array[i];
       }
       tank_avg /= idx_avg;
-      tank_lvl = 60 - (tank_avg - 125) / 7.5;
+      tank_lvl = 60 - (tank_avg - 130) / 7.5;
 
       if (tank_lvl < 0) {
         tank_lvl = 0;
